@@ -1,0 +1,9 @@
+{
+  "env": "development",
+  "serverPort": "3000",
+  "db": {
+    "host": "mongodb://localhost",
+    "port": "27017",
+    "name": "ewallet"
+  }
+}

@@ -1,0 +1,6 @@
+_Store
+thumbs.db
+*.log
+node_modules/
+.vscode/
+.env
