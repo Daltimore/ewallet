@@ -7,7 +7,6 @@ require('dotenv').config();
  * Module dependencies
  */
 var config = require('config');
-var debug = require('debug')('ewallet:server');
 var http = require('http');
 
 var app = require('./app');
