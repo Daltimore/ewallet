@@ -4,7 +4,7 @@
   "description": "Endpoint for e-wallet",
   "main": "index.js",
   "scripts": {
-    "start": "node index"
+    "start": "nodemon index"
   },
   "dependencies": {
     "config": "^2.0.1",
@@ -13,6 +13,7 @@
     "dotenv": "^6.1.0",
     "express": "~4.16.0",
     "http-errors": "~1.6.2",
+    "mongoose": "^5.3.10",
     "morgan": "~1.9.0"
   },
   "repository": {
@@ -20,5 +21,8 @@
     "url": "https://github.com/Daltimore"
   },
   "author": "Daltimore",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^1.18.6"
+  }
 }
