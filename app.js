@@ -1,5 +1,5 @@
 const express = require('express');
-// require('express-async-errors')
+require('express-async-errors')
 const reqLogger = require('morgan');
 const app = express();
 
