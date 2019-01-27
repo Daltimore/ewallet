@@ -1,55 +1,44 @@
-/**
- * Load .env variables into node enviroment
- */
+// Load .env variables into node enviroment
 require('dotenv').config();
 
-/**
- * Module dependencies
- */
-var config = require('config');
-var http = require('http');
+// Create helper functions globally
+global.route = route => require(`./routes${route}`)
+global.model = model => require(`./models${model}`)
+global.middleware = middleware => require(`./middleware${middleware}`)
+global.startup = startup => require(`./startup${startup}`)
 
-var app = require('./app');
+const config = require('config');
+const http = require('http');
+const app = require('./app');
 
-/**
- * Get port from config and store in Express.
- */
-var port = config.serverPort || 3000;
-app.set('port', port);
+// Get port from config and store in Express
+app.set('port', config.serverPort || 3000);
 
-/**
- * Create HTTP server.
- */
+// Create HTTP server.
 var server = http.createServer(app);
 
-/**
- * Listen on provided port, on all network interfaces.
- */
+// Start up server
 server.listen(port);
 server.on('error', onError);
 server.on('listening', onListening);
 
 
-/**
- * Event listener for HTTP server "error" event.
- */
+// Event listener for HTTP server "error" event.
 function onError(error) {
-  if (error.syscall !== 'listen') {
-    throw error;
-  }
-
-  var bind = typeof port === 'string'
-    ? 'Pipe ' + port
-    : 'Port ' + port;
+  if (error.syscall !== 'listen') throw error;
 
   // handle specific listen errors with friendly messages
   switch (error.code) {
     case 'EACCES':
-      console.error(bind + ' requires elevated privileges');
+      console.error('Port' + port + ' requires elevated privileges');
       process.exit(1);
       break;
     case 'EADDRINUSE':
-      console.error(bind + ' is already in use');
+      console.error('Port' + port + ' is already in use');
+      process.exit(1);
+      break;
+    case 'ECONNREFUSED':
+      console.log('Unable to connect to connect to port or external resource')
       process.exit(1);
       break;
     default:
@@ -57,13 +46,8 @@ function onError(error) {
   }
 }
 
-/**
- * Event listener for HTTP server "listening" event.
- */
+// Event listener for HTTP server "listening" event.
 function onListening() {
   var addr = server.address();
-  var bind = typeof addr === 'string'
-    ? 'pipe ' + addr
-    : 'port ' + addr.port;
-  console.log(`Server is running. Listening on port ${bind}`);
+  console.log(`Server is running. Listening on port ${addr}`);
 }

@@ -1,30 +1,21 @@
-var createError = require('http-errors');
-var express = require('express');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+const express = require('express');
+// require('express-async-errors')
+const reqLogger = require('morgan');
+const app = express();
 
-var usersRouter = require('./routes/users');
-
-var app = express();
-
-app.use(logger('dev'));
+app.use(reqLogger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
 
-app.use('/users', usersRouter);
+startup('db').Connect()
 
-/**
- * Catch and handle 404 Error
- */
-app.use(function (req, res) {
-  const err = new createError.NotFound();
+// Route handlers
+app.use('/users', route('users'));
 
-  res.status(err.status || 500).json({
-    'success': false,
-    'status': err.status,
-    'message': err.message
-  });
-});
+// Catch and handle Server/Promise related Errors
+app.use(middleware('error'));
+
+// Catch and handle 404 Errors
+app.use(middleware('404'));
 
 module.exports = app;

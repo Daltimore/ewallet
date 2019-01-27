@@ -2,7 +2,7 @@ var express = require('express');
 var router = express.Router();
 var mongoose = require('mongoose')
 
-require('../models/db').Connect()
+require('../startup/db').Connect()
 var User = require('../models/users');
 
 /* GET users listing. */
