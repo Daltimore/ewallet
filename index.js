@@ -2,15 +2,15 @@
 require('dotenv').config();
 
 // Create helper functions globally
-global.route = route => require(`./routes/${route}`)
-global.model = model => require(`./models/${model}`)
-global.middleware = middleware => require(`./middleware/${middleware}`)
-global.startup = startup => require(`./startup/${startup}`)
+global.route = route => require(`./src/routes/${route}`)
+global.model = model => require(`./src/models/${model}`)
+global.middleware = middleware => require(`./src/middleware/${middleware}`)
+global.startup = startup => require(`./src/startup/${startup}`)
 
 const debug = require('debug')('ewallet:startup')
 const config = require('config');
 const http = require('http');
-const app = require('./app');
+const app = require('./src/app');
 
 // Get port from config and store in Express
 const port = config.serverPort || 3000
