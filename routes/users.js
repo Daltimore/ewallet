@@ -1,82 +1,167 @@
-var express = require('express');
-var router = express.Router();
-var mongoose = require('mongoose')
+const router = require('express').Router();
+const User = model('users');
+const debug = require('debug')('route:users')
+const _ = require('lodash')
 
-require('../startup/db').Connect()
-var User = require('../models/users');
+// GET all users
+router.get('/', async (req, res) => {
+  // Allow fetching of deleted users
+  const level = req.query.level || 'active';
+  let params;
 
-/* GET users listing. */
-router.get('/', function (req, res) {
-  User.find({}).sort({firstName: 1}).exec()
-  .then(users => {
-    if (users.length > 0) { res.json(users); return; }
-    res.json({
-      'success': false,
-      'status': 200,
-      'message': 'No users found'
-    });
-  })
-  .catch(err => res.json({
-    'success': false,
-    'status': 500,
-    'message': err
-  }));
+  if (level == 'all') params = {}
+  else params = { isDeleted: level }
 
-  return;
+  const users = await User.find(params)
+    .sort({ firstName: 1 })
+    .select('-__v')
+
+  if (!users) {
+    return res.status(200).json({
+      status: false,
+      message: 'No users found'
+    })
+  }
+
+  return res.status(200).json({
+    status: true,
+    'data': users
+  });
 });
 
-router.post('/', function (req, res) {
-  var user = new User({
-    firstName: req.body.firstName,
-    lastName: req.body.lastName,
-    shopName: req.body.shopName,
-    bankName: req.body.bankName,
-    BankCode: req.body.BankCode,
-    accountName: req.body.accountName,
-    accountNumber: req.body.accountNumber,
-    mobileNumber: req.body.mobileNumber,
-    active: req.body.active,
-    createdAt: req.body.createdAt
+// Create a new user
+router.post('/', async (req, res, next) => {
+  // create user and store in db
+  const user = await new User({ ...req.body });
+  await user.save()
+  debug(user)
+
+  if (!user) throw new Error('Unable to create user');
+
+  return res.status(201).json({
+    status: true,
+    message: 'User created successfully',
+    data: user
   });
-  // var user = new User({...req.body})
-
-  user.save()
-  .then(() => {
-    res.json({
-      'success': true,
-      'status': 201,
-      'message': 'User created successfully'
-    });
-  })
-  .catch(err => {
-    msg = err.message.split('failed: ')[1].split('., ');
-    res.json({
-      'success': false,
-      'status': 500,
-      'message': msg
-    });
-  })
-
-  return;
 })
 
-router.get('/:acctNo', function (req, res) {
-  User.find({accountNumber: req.params.acctNo})
-  .then(user => {console.log(req.params.acctNo)
-    if (user.length > 0) { res.json(user); return; }
-    res.json({
-      'success': false,
-      'status': 200,
-      'message': 'User doesn\'t exist'
-    });
-  })
-  .catch(err => res.json({
-    'success': false,
-    'status': 500,
-    'message': err
-  }));
+// Get user by id
+router.get('/:id', async (req, res) => {
+  // Attempt to find user
+  const id = req.params.id;
+  const user = await User.findById(id)
+  .and({isDeleted: 'active'})
+  .limit(1)
 
-  return
+  if (!user || user.length == 0) {
+    return res.status(404).json({
+      status: false,
+      message: `user with id ${id} not found`
+    })
+  }
+
+  return res.status(200).json({
+    status: true,
+    data: user
+  });
+})
+
+// Update an existing user
+router.put('/:id', async (req, res) => {
+  let user;
+  user = await User.findById(req.params.id)
+  .and({isDeleted: 'active'})
+  .select('-__v');
+
+  // Handle user not found
+  if (!user) {
+    return res.status(404).json({
+      status: false,
+      message: 'User not found'
+    });
+  }
+
+  // Update attributes
+  Object.entries(req.body).forEach(entry => {
+    user[entry[0]] = entry[1]
+  })
+
+  // Save user
+  await user.save()
+
+  return res.status(201).json({
+    status: true,
+    message: 'User updated successfully',
+    data: user
+  });
+})
+
+// Delete user by id and level
+router.delete('/:id', async (req, res) => {
+  // Set delete level
+  const id = req.params.id;
+  const deleteLevel = req.query.level || 'soft';
+  let user;
+
+  // Attempt to find user first
+  user = await User.findById(id)
+  if (!user) {
+    return res.status(404).json({
+      status: false,
+      message: 'User not found'
+    })
+  }
+
+  // Handle permanent delete from db
+  if (deleteLevel === 'hard') {
+    user.isDeleted = deleteLevel
+    await user.remove()
+
+    return res.status(200).json({
+      status: true,
+      message: 'User deleted from database successfully',
+      data: (user)
+    })
+  }
+
+  // Check if user is soft-deleted already
+  if (user.isDeleted == 'soft') {
+    return res.status(405).json({
+      status: false,
+      message: 'User already soft deleted',
+      data: [_.pick(user, ['id', 'firstName', 'lastName'])]
+    })
+  }
+
+  // Handle soft delete
+  user.isDeleted = deleteLevel
+  await user.save()
+
+  return res.status(200).json({
+    status: true,
+    message: 'User soft deleted successfully',
+    data: user
+  })
+})
+
+// Get user by any param e.g /by?user[bankName]=Diamond
+router.get('/all/by/', async (req, res) => {
+  const key = Object.keys(req.query.user)[0];
+  const value = Object.values(req.query.user)[0]
+
+  const user = await User.find({[key]: value})
+
+  if (!user || user.length == 0) {
+    return res.status(404).json({
+      status: false,
+      message: `user with ${key} ${value} not found`
+    })
+  }
+
+  return res.status(200).json({
+    status: true,
+    data: user
+  });
 })
 
 module.exports = router;

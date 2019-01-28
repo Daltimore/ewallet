@@ -1,10 +1,10 @@
 const createError = require('http-errors');
 
-module.exports = function (err, _, res) {
+module.exports = function (err, _, res, next) {
   const error = new createError.InternalServerError();
 
-  res.status(err.status || error.status || 500).json({
-    'status': err.status || error.status,
+  return res.status(error.status || 500).json({
+    'status': err.status || false,
     'message': err.message || error.message
   });
 }
